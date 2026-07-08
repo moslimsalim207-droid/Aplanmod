@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>وكالة الدواحي - الحجز المتكامل</title>
+  <!-- المكتبات الخارجية -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, sans-serif; }
+    body { background: #f0f4f9; display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
+    .app { max-width: 950px; width: 100%; background: #fff; border-radius: 28px; box-shadow: 0 20px 60px rgba(0,0,0,0.10); padding: 30px; min-height: 650px; transition: 0.3s; }
+    h2 { color: #1a2b4c; border-bottom: 3px solid #007bff; padding-bottom: 10px; display: inline-block; margin-bottom: 25px; }
+    .page { display: none; animation: fade 0.3s ease; }
+    .page.active { display: block; }
+    @keyframes fade { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+
+    .form-group { margin-bottom: 18px; }
+    label { display: block; font-weight: 600; color: #2c3e50; margin-bottom: 5px; font-size: 14px; }
+    input, select { width: 100%; padding: 13px 16px; border: 1px solid #dce1e8; border-radius: 12px; font-size: 15px; background: #fafbfc; transition: 0.2s; }
+    input:focus, select:focus { border-color: #007bff; outline: none; box-shadow: 0 0 0 3px rgba(0,123,255,0.15); background: #fff; }
+    .btn { padding: 14px 28px; border: none; border-radius: 14px; font-size: 16px; font-weight: 700; cursor: pointer; transition: 0.2s; color: #fff; background: #007bff; width: 100%; }
+    .btn:hover { background: #0056b3; transform: scale(1.02); }
+    .btn-secondary { background: #6c757d; }
+    .btn-secondary:hover { background: #5a6268; }
+    .btn-success { background: #28a745; }
+    .btn-success:hover { background: #218838; }
+    .text-center { text-align: center; margin-top: 15px; }
+    .link { color: #007bff; cursor: pointer; font-weight: 600; }
+    .link:hover { text-decoration: underline; }
+    .error-msg { color: #dc3545; font-size: 13px; margin-top: 5px; display: none; }
+    .success-msg { color: #28a745; font-size: 14px; }
+
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 18px; margin: 20px 0; }
+    .card { background: #fff; border-radius: 16px; padding: 16px; box-shadow: 0 4px 12px rgba(0,0,0,0.06); text-align: center; cursor: pointer; border: 2px solid #eee; transition: 0.25s; }
+    .card:hover { transform: translateY(-5px); border-color: #007bff; box-shadow: 0 12px 28px rgba(0,0,0,0.08); }
+    .card img { width: 100%; height: 80px; object-fit: contain; margin-bottom: 8px; }
+    .card h4 { color: #1a2b4c; font-size: 15px; }
+
+    .tab-group { display: flex; gap: 12px; flex-wrap: wrap; margin: 20px 0; }
+    .tab-btn { padding: 10px 25px; border-radius: 40px; border: 2px solid #e2e8f0; background: #fff; font-weight: 700; cursor: pointer; transition: 0.2s; }
+    .tab-btn.active-tab { background: #007bff; color: #fff; border-color: #007bff; }
+    .tab-btn:hover:not(.active-tab) { border-color: #007bff; }
+
+    .list-item { background: #f8fafc; padding: 14px 18px; border-radius: 14px; margin-bottom: 10px; border-right: 5px solid #007bff; display: flex; justify-content: space-between; flex-wrap: wrap; align-items: center; gap: 10px; }
+    .list-item.selected { background: #e3f0ff; border-right-color: #28a745; }
+    .flex-between { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; }
+    .search-input { flex: 1; min-width: 200px; padding: 10px 16px; border-radius: 40px; border: 1px solid #ddd; }
+    .mt-20 { margin-top: 20px; }
+    .back-link { display: inline-block; margin-bottom: 20px; background: #f1f4f9; padding: 6px 20px; border-radius: 40px; cursor: pointer; font-weight: 600; }
+    .back-link:hover { background: #e2e8f0; }
+    .file-label { display: block; padding: 14px; background: #f1f4f9; border-radius: 12px; text-align: center; border: 2px dashed #ccc; cursor: pointer; }
+    .file-label input { display: none; }
+    .file-name { font-weight: 600; color: #007bff; }
+
+    .radio-group { display: flex; flex-wrap: wrap; gap: 12px; margin: 8px 0; }
+    .radio-group label { display: flex; align-items: center; gap: 8px; background: #f1f4f9; padding: 10px 16px; border-radius: 40px; cursor: pointer; font-weight: normal; border: 2px solid transparent; transition: 0.2s; }
+    .radio-group input[type="radio"] { width: auto; margin: 0; display: inline-block; }
+    .radio-group label:has(input:checked) { background: #d4e4ff; border-color: #007bff; font-weight: 700; }
+
+    .hotel-card { background: #f8fafc; padding: 16px; border-radius: 16px; margin-bottom: 15px; border: 1px solid #e9ecef; }
+    .hotel-card .room-options { display: flex; flex-wrap: wrap; gap: 10px; margin: 10px 0; }
+    .room-btn { padding: 6px 18px; border-radius: 40px; border: 1px solid #ccc; background: #fff; cursor: pointer; font-weight: 600; }
+    .room-btn.active-room { background: #007bff; color: #fff; border-color: #007bff; }
+    .date-group { display: flex; gap: 15px; flex-wrap: wrap; margin: 10px 0; }
+    .date-group input { width: auto; flex: 1; min-width: 140px; }
+
+    .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); justify-content: center; align-items: center; z-index: 999; padding: 20px; }
+    .modal-overlay.show { display: flex; }
+    .modal-box { background: #fff; max-width: 600px; width: 100%; border-radius: 28px; padding: 30px; max-height: 90vh; overflow-y: auto; box-shadow: 0 30px 60px rgba(0,0,0,0.3); }
+    .receipt-item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px dashed #eee; }
+    .barcode-container { display: flex; justify-content: center; margin: 20px 0; background: #fff; padding: 15px; border-radius: 16px; border: 2px solid #eee; }
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ================== صفحة تسجيل الدخول ================== -->
+  <div id="page-login" class="page active">
+    <h2>🔐 تسجيل الدخول</h2>
+    <form id="loginForm">
+      <div class="form-group"><label>البريد الإلكتروني</label><input type="email" id="loginEmail" required></div>
+      <div class="form-group"><label>كلمة المرور</label><input type="password" id="loginPassword" required></div>
+      <button type="submit" class="btn">دخول</button>
+    </form>
+    <div class="text-center"><span>ليس لديك حساب؟ </span><span class="link" onclick="showPage('register')">➕ إنشاء حساب</span></div>
+    <div id="loginError" class="error-msg text-center" style="display:block; margin-top:10px;"></div>
+  </div>
+
+  <!-- ================== صفحة إنشاء حساب ================== -->
+  <div id="page-register" class="page">
+    <h2>📝 إنشاء حساب</h2>
+    <form id="registerForm">
+      <div class="form-group"><label>اسم المستخدم</label><input type="text" id="regUsername" required></div>
+      <div class="form-group"><label>البريد الإلكتروني</label><input type="email" id="regEmail" required></div>
+      <div class="form-group"><label>رقم الهاتف</label><input type="tel" id="regPhone" required></div>
+      <div class="form-group">
+        <label>الدولة</label>
+        <select id="regCountry" required>
+          <option value="السودان">السودان</option>
+          <option value="السعودية">السعودية</option>
+          <option value="الإمارات">الإمارات</option>
+          <option value="مصر">مصر</option>
+          <option value="قطر">قطر</option>
+          <option value="الكويت">الكويت</option>
+          <option value="الأردن">الأردن</option>
+          <option value="المغرب">المغرب</option>
+          <option value="الجزائر">الجزائر</option>
+          <option value="تونس">تونس</option>
+          <option value="عُمان">عُمان</option>
+          <option value="البحرين">البحرين</option>
+          <option value="لبنان">لبنان</option>
+          <option value="العراق">العراق</option>
+          <option value="اليمن">اليمن</option>
+        </select>
+      </div>
+      <div class="form-group"><label>صورة جواز سفر</label>
+        <div class="file-label" onclick="document.getElementById('passportInput').click()">📎 اختر الصورة
+          <input type="file" id="passportInput" accept="image/*"><span id="passportFileName" class="file-name"> (لم يتم)</span>
+        </div>
+      </div>
+      <div class="form-group"><label>كود الكتب (اختياري)</label><input type="text" id="regCode"></div>
+      <div class="form-group"><label>كلمة المرور</label><input type="password" id="regPassword" required></div>
+      <div class="form-group"><label>أعد كتابة كلمة المرور</label><input type="password" id="regPassword2" required></div>
+      <button type="submit" class="btn">تسجيل</button>
+    </form>
+    <div class="text-center"><span>لديك حساب؟ </span><span class="link" onclick="showPage('login')">🔙 تسجيل الدخول</span></div>
+    <div id="registerError" class="error-msg text-center" style="display:block; margin-top:10px;"></div>
+  </div>
+
+  <!-- ================== الصفحة الرئيسية (شركات حسب الدولة) ================== -->
+  <div id="page-home" class="page">
+    <div class="flex-between"><h2>✈️ وكالة الدواحي</h2><span class="link" onclick="logout()">🚪 خروج</span></div>
+    <p id="welcomeMsg" style="color:#555; margin:5px 0 15px;"></p>
+    <div id="airlineGrid" class="grid"></div>
+  </div>
+
+  <!-- ================== صفحة الشركة ================== -->
+  <div id="page-airline" class="page">
+    <span class="back-link" onclick="showPage('home')">⬅ العودة</span>
+    <h2 id="airlineTitle">🛫 شركة الطيران</h2>
+    <div class="tab-group">
+      <button class="tab-btn active-tab" onclick="switchTab('flights')">✈️ الرحلات</button>
+      <button class="tab-btn" onclick="switchTab('tickets')">🎫 التذاكر</button>
+      <button class="tab-btn" onclick="switchTab('hotels')">🏨 الفنادق</button>
+    </div>
+    <div id="tabContent"></div>
+    <button id="finalBookBtn" class="btn btn-success mt-20" style="display:none;" onclick="confirmBooking()">✅ تأكيد الحجز النهائي</button>
+  </div>
+
+  <!-- ================== نافذة تأكيد الحجز ================== -->
+  <div class="modal-overlay" id="receiptModal">
+    <div class="modal-box">
+      <h3>🎉 تم الحجز بنجاح!</h3>
+      <div id="receiptContent"></div>
+      <div id="qrcodeContainer" class="barcode-container"></div>
+      <button class="btn btn-success" onclick="downloadPDF()">📄 تحميل PDF مع الباركود</button>
+      <button class="btn btn-secondary mt-20" onclick="closeReceipt()">إغلاق</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // ================================================================
+  // 1. البيانات الوهمية (محاكاة قاعدة البيانات) - جميع الدول العربية
+  // ================================================================
+  const DB = {
+    users: [
+      { id: 1, username: 'أحمد', email: 'ahmed@sd.com', password: '123', phone: '0912345678', country: 'السودان', passport: 'pass1.jpg', code: 'ABC' },
+      { id: 2, username: 'خالد', email: 'khalid@sa.com', password: '123', phone: '0555555555', country: 'السعودية', passport: 'pass2.jpg', code: 'XYZ' }
+    ],
+
+    // ===== شركات الطيران (مصنفة حسب الدولة) =====
+    airlines: [
+      // السودان
+      { id: 1, name: 'الخطوط الجوية السودانية', country: 'السودان', logo: 'https://placehold.co/200x80/1a5276/fff?text=SudanAir' },
+      { id: 2, name: 'طيران بدر', country: 'السودان', logo: 'https://placehold.co/200x80/2980b9/fff?text=Badr' },
+      // السعودية
+      { id: 3, name: 'الخطوط السعودية', country: 'السعودية', logo: 'https://placehold.co/200x80/2ecc71/fff?text=Saudia' },
+      { id: 4, name: 'طيران ناس', country: 'السعودية', logo: 'https://placehold.co/200x80/27ae60/fff?text=Flynas' },
+      { id: 5, name: 'أديل للطيران', country: 'السعودية', logo: 'https://placehold.co/200x80/1abc9c/fff?text=Adel' },
+      // الإمارات
+      { id: 6, name: 'طيران الإمارات', country: 'الإمارات', logo: 'https://placehold.co/200x80/d32f2f/fff?text=Emirates' },
+      { id: 7, name: 'الاتحاد للطيران', country: 'الإمارات', logo: 'https://placehold.co/200x80/c0392b/fff?text=Etihad' },
+      { id: 8, name: 'العربية للطيران', country: 'الإمارات', logo: 'https://placehold.co/200x80/e74c3c/fff?text=AirArabia' },
+      // مصر
+      { id: 9, name: 'مصر للطيران', country: 'مصر', logo: 'https://placehold.co/200x80/e67e22/fff?text=EgyptAir' },
+      { id: 10, name: 'إير كايرو', country: 'مصر', logo: 'https://placehold.co/200x80/f39c12/fff?text=AirCairo' },
+      { id: 11, name: 'النيل للطيران', country: 'مصر', logo: 'https://placehold.co/200x80/d35400/fff?text=NileAir' },
+      // قطر
+      { id: 12, name: 'الخطوط القطرية', country: 'قطر', logo: 'https://placehold.co/200x80/8e44ad/fff?text=Qatar' },
+      // الكويت
+      { id: 13, name: 'الخطوط الكويتية', country: 'الكويت', logo: 'https://placehold.co/200x80/2c3e50/fff?text=KuwaitAir' },
+      { id: 14, name: 'طيران الجزيرة', country: 'الكويت', logo: 'https://placehold.co/200x80/34495e/fff?text=Jazeera' },
+      // الأردن
+      { id: 15, name: 'الملكية الأردنية', country: 'الأردن', logo: 'https://placehold.co/200x80/16a085/fff?text=RoyalJordan' },
+      { id: 16, name: 'الأجنحة العربية', country: 'الأردن', logo: 'https://placehold.co/200x80/1abc9c/fff?text=ArabWings' },
+      // المغرب
+      { id: 17, name: 'الخطوط الملكية المغربية', country: 'المغرب', logo: 'https://placehold.co/200x80/c0392b/fff?text=RoyalAirMaroc' },
+      { id: 18, name: 'العربية للطيران المغرب', country: 'المغرب', logo: 'https://placehold.co/200x80/e74c3c/fff?text=AirArabiaMaroc' },
+      // الجزائر
+      { id: 19, name: 'الخطوط الجوية الجزائرية', country: 'الجزائر', logo: 'https://placehold.co/200x80/27ae60/fff?text=AirAlgerie' },
+      { id: 20, name: 'طيران الطاسيلي', country: 'الجزائر', logo: 'https://placehold.co/200x80/2ecc71/fff?text=Tassili' },
+      // تونس
+      { id: 21, name: 'الخطوط التونسية', country: 'تونس', logo: 'https://placehold.co/200x80/f1c40f/fff?text=TunisAir' },
+      // عُمان
+      { id: 22, name: 'الطيران العُماني', country: 'عُمان', logo: 'https://placehold.co/200x80/2980b9/fff?text=OmanAir' },
+      { id: 23, name: 'طيران السلام', country: 'عُمان', logo: 'https://placehold.co/200x80/3498db/fff?text=SalamAir' },
+      // البحرين
+      { id: 24, name: 'طيران الخليج', country: 'البحرين', logo: 'https://placehold.co/200x80/e67e22/fff?text=GulfAir' },
+      // لبنان
+      { id: 25, name: 'طيران الشرق الأوسط (MEA)', country: 'لبنان', logo: 'https://placehold.co/200x80/8e44ad/fff?text=MEA' },
+      // العراق
+      { id: 26, name: 'الخطوط العراقية', country: 'العراق', logo: 'https://placehold.co/200x80/2c3e50/fff?text=IraqiAir' },
+      { id: 27, name: 'فلاي بغداد', country: 'العراق', logo: 'https://placehold.co/200x80/34495e/fff?text=FlyBaghdad' },
+      // اليمن
+      { id: 28, name: 'الخطوط اليمنية', country: 'اليمن', logo: 'https://placehold.co/200x80/f39c12/fff?text=Yemenia' },
+    ],
+
+    // ===== الرحلات الجوية =====
+    flights: [
+      // السودان (id 1,2)
+      { id: 1, airlineId: 1, from: 'الخرطوم', to: 'القاهرة', fromCountry: 'السودان', toCountry: 'مصر', time: '08:00', price: 300 },
+      { id: 2, airlineId: 1, from: 'الخرطوم', to: 'جدة', fromCountry: 'السودان', toCountry: 'السعودية', time: '12:30', price: 250 },
+      { id: 3, airlineId: 2, from: 'بورتسودان', to: 'دبي', fromCountry: 'السودان', toCountry: 'الإمارات', time: '15:00', price: 450 },
+      { id: 4, airlineId: 2, from: 'الخرطوم', to: 'الدوحة', fromCountry: 'السودان', toCountry: 'قطر', time: '18:20', price: 380 },
+      // السعودية (id 3,4,5)
+      { id: 5, airlineId: 3, from: 'الرياض', to: 'الخرطوم', fromCountry: 'السعودية', toCountry: 'السودان', time: '09:15', price: 280 },
+      { id: 6, airlineId: 3, from: 'جدة', to: 'القاهرة', fromCountry: 'السعودية', toCountry: 'مصر', time: '14:00', price: 350 },
+      { id: 7, airlineId: 4, from: 'الرياض', to: 'دبي', fromCountry: 'السعودية', toCountry: 'الإمارات', time: '16:45', price: 400 },
+      { id: 8, airlineId: 5, from: 'الدمام', to: 'الدوحة', fromCountry: 'السعودية', toCountry: 'قطر', time: '11:30', price: 220 },
+      // الإمارات (id 6,7,8)
+      { id: 9, airlineId: 6, from: 'دبي', to: 'القاهرة', fromCountry: 'الإمارات', toCountry: 'مصر', time: '07:00', price: 500 },
+      { id: 10, airlineId: 6, from: 'دبي', to: 'الخرطوم', fromCountry: 'الإمارات', toCountry: 'السودان', time: '13:20', price: 320 },
+      { id: 11, airlineId: 7, from: 'أبو ظبي', to: 'الرياض', fromCountry: 'الإمارات', toCountry: 'السعودية', time: '10:00', price: 380 },
+      { id: 12, airlineId: 8, from: 'الشارقة', to: 'عمان', fromCountry: 'الإمارات', toCountry: 'الأردن', time: '19:00', price: 290 },
+      // مصر (id 9,10,11)
+      { id: 13, airlineId: 9, from: 'القاهرة', to: 'الرياض', fromCountry: 'مصر', toCountry: 'السعودية', time: '14:00', price: 350 },
+      { id: 14, airlineId: 9, from: 'القاهرة', to: 'دبي', fromCountry: 'مصر', toCountry: 'الإمارات', time: '19:00', price: 420 },
+      { id: 15, airlineId: 10, from: 'الإسكندرية', to: 'جدة', fromCountry: 'مصر', toCountry: 'السعودية', time: '22:00', price: 300 },
+      { id: 16, airlineId: 11, from: 'القاهرة', to: 'الخرطوم', fromCountry: 'مصر', toCountry: 'السودان', time: '06:30', price: 310 },
+      // قطر (id 12)
+      { id: 17, airlineId: 12, from: 'الدوحة', to: 'القاهرة', fromCountry: 'قطر', toCountry: 'مصر', time: '11:30', price: 390 },
+      { id: 18, airlineId: 12, from: 'الدوحة', to: 'دبي', fromCountry: 'قطر', toCountry: 'الإمارات', time: '15:45', price: 280 },
+      // الكويت (id 13,14)
+      { id: 19, airlineId: 13, from: 'الكويت', to: 'دبي', fromCountry: 'الكويت', toCountry: 'الإمارات', time: '09:00', price: 360 },
+      { id: 20, airlineId: 14, from: 'الكويت', to: 'القاهرة', fromCountry: 'الكويت', toCountry: 'مصر', time: '13:00', price: 330 },
+      // الأردن (id 15,16)
+      { id: 21, airlineId: 15, from: 'عمان', to: 'دبي', fromCountry: 'الأردن', toCountry: 'الإمارات', time: '10:30', price: 400 },
+      { id: 22, airlineId: 16, from: 'عمان', to: 'القاهرة', fromCountry: 'الأردن', toCountry: 'مصر', time: '17:00', price: 290 },
+      // المغرب (id 17,18)
+      { id: 23, airlineId: 17, from: 'الدار البيضاء', to: 'القاهرة', fromCountry: 'المغرب', toCountry: 'مصر', time: '08:00', price: 500 },
+      { id: 24, airlineId: 18, from: 'الرباط', to: 'تونس', fromCountry: 'المغرب', toCountry: 'تونس', time: '14:30', price: 420 },
+      // الجزائر (id 19,20)
+      { id: 25, airlineId: 19, from: 'الجزائر', to: 'تونس', fromCountry: 'الجزائر', toCountry: 'تونس', time: '12:00', price: 260 },
+      { id: 26, airlineId: 20, from: 'الجزائر', to: 'القاهرة', fromCountry: 'الجزائر', toCountry: 'مصر', time: '20:00', price: 450 },
+      // تونس (id 21)
+      { id: 27, airlineId: 21, from: 'تونس', to: 'الجزائر', fromCountry: 'تونس', toCountry: 'الجزائر', time: '16:00', price: 250 },
+      { id: 28, airlineId: 21, from: 'تونس', to: 'باريس', fromCountry: 'تونس', toCountry: 'فرنسا', time: '07:30', price: 550 },
+      // عُمان (id 22,23)
+      { id: 29, airlineId: 22, from: 'مسقط', to: 'دبي', fromCountry: 'عُمان', toCountry: 'الإمارات', time: '09:30', price: 210 },
+      { id: 30, airlineId: 23, from: 'مسقط', to: 'الرياض', fromCountry: 'عُمان', toCountry: 'السعودية', time: '13:00', price: 320 },
+      // البحرين (id 24)
+      { id: 31, airlineId: 24, from: 'المنامة', to: 'دبي', fromCountry: 'البحرين', toCountry: 'الإمارات', time: '11:00', price: 240 },
+      { id: 32, airlineId: 24, from: 'المنامة', to: 'الرياض', fromCountry: 'البحرين', toCountry: 'السعودية', time: '18:00', price: 190 },
+      // لبنان (id 25)
+      { id: 33, airlineId: 25, from: 'بيروت', to: 'دبي', fromCountry: 'لبنان', toCountry: 'الإمارات', time: '08:30', price: 450 },
+      { id: 34, airlineId: 25, from: 'بيروت', to: 'القاهرة', fromCountry: 'لبنان', toCountry: 'مصر', time: '15:00', price: 320 },
+      // العراق (id 26,27)
+      { id: 35, airlineId: 26, from: 'بغداد', to: 'دبي', fromCountry: 'العراق', toCountry: 'الإمارات', time: '10:00', price: 380 },
+      { id: 36, airlineId: 27, from: 'بغداد', to: 'القاهرة', fromCountry: 'العراق', toCountry: 'مصر', time: '19:30', price: 350 },
+      // اليمن (id 28)
+      { id: 37, airlineId: 28, from: 'صنعاء', to: 'جدة', fromCountry: 'اليمن', toCountry: 'السعودية', time: '06:00', price: 280 },
+      { id: 38, airlineId: 28, from: 'عدن', to: 'القاهرة', fromCountry: 'اليمن', toCountry: 'مصر', time: '14:00', price: 400 },
+    ],
+
+    // ===== الفنادق (مصنفة حسب الدولة) =====
+    hotels: [
+      // السودان
+      { id: 1, name: 'فندق الخرطوم', country: 'السودان', city: 'الخرطوم', stars: 4, rooms: [{ name: 'غرفة فردية', price: 60 }, { name: 'جناح', price: 120 }] },
+      { id: 2, name: 'فندق النيلين', country: 'السودان', city: 'الخرطوم', stars: 3, rooms: [{ name: 'غرفة اقتصادية', price: 40 }, { name: 'غرفة مطلة', price: 70 }] },
+      // السعودية
+      { id: 3, name: 'فندق المروة', country: 'السعودية', city: 'مكة', stars: 5, rooms: [{ name: 'غرفة سوبرير', price: 200 }, { name: 'جناح عائلي', price: 350 }] },
+      { id: 4, name: 'فندق الفيصلية', country: 'السعودية', city: 'الرياض', stars: 5, rooms: [{ name: 'غرفة كلاسيك', price: 180 }, { name: 'جناح رئاسي', price: 400 }] },
+      { id: 5, name: 'فندق الروضة', country: 'السعودية', city: 'المدينة', stars: 4, rooms: [{ name: 'غرفة مفردة', price: 85 }, { name: 'غرفة مزدوجة', price: 140 }] },
+      // الإمارات
+      { id: 6, name: 'فندق الماسة', country: 'الإمارات', city: 'دبي', stars: 5, rooms: [{ name: 'غرفة مطلة على البحر', price: 220 }, { name: 'جناح فاخر', price: 400 }] },
+      { id: 7, name: 'فندق البرج الذهبي', country: 'الإمارات', city: 'أبو ظبي', stars: 5, rooms: [{ name: 'غرفة كلاسيك', price: 180 }, { name: 'جناح رئاسي', price: 350 }] },
+      // مصر
+      { id: 8, name: 'فندق النيل ريتز', country: 'مصر', city: 'القاهرة', stars: 5, rooms: [{ name: 'غرفة سوبرير', price: 150 }, { name: 'جناح', price: 300 }] },
+      { id: 9, name: 'فندق الأمل', country: 'مصر', city: 'الإسكندرية', stars: 3, rooms: [{ name: 'غرفة اقتصادية', price: 50 }, { name: 'غرفة مطلة', price: 80 }] },
+      // قطر
+      { id: 10, name: 'فندق الواحة', country: 'قطر', city: 'الدوحة', stars: 3, rooms: [{ name: 'غرفة عادية', price: 70 }, { name: 'غرفة مميزة', price: 110 }] },
+      { id: 11, name: 'فندق الشرق', country: 'قطر', city: 'الدوحة', stars: 4, rooms: [{ name: 'غرفة قياسية', price: 100 }, { name: 'جناح', price: 180 }] },
+      // الكويت
+      { id: 12, name: 'فندق الكويت', country: 'الكويت', city: 'مدينة الكويت', stars: 4, rooms: [{ name: 'غرفة مفردة', price: 90 }, { name: 'جناح', price: 160 }] },
+      { id: 13, name: 'فندق المارينا', country: 'الكويت', city: 'السالمية', stars: 5, rooms: [{ name: 'غرفة مطلة', price: 140 }, { name: 'جناح عائلي', price: 260 }] },
+      // الأردن
+      { id: 14, name: 'فندق البتراء', country: 'الأردن', city: 'عمّان', stars: 4, rooms: [{ name: 'غرفة قياسية', price: 95 }, { name: 'جناح', price: 170 }] },
+      { id: 15, name: 'فندق البحر الميت', country: 'الأردن', city: 'البحر الميت', stars: 5, rooms: [{ name: 'غرفة سوبرير', price: 180 }, { name: 'جناح رئاسي', price: 320 }] },
+      // المغرب
+      { id: 16, name: 'فندق المامونية', country: 'المغرب', city: 'مراكش', stars: 5, rooms: [{ name: 'غرفة كلاسيك', price: 160 }, { name: 'جناح', price: 280 }] },
+      { id: 17, name: 'فندق الرياض', country: 'المغرب', city: 'الدار البيضاء', stars: 4, rooms: [{ name: 'غرفة عادية', price: 85 }, { name: 'غرفة مزدوجة', price: 130 }] },
+      // الجزائر
+      { id: 18, name: 'فندق الأوراسي', country: 'الجزائر', city: 'الجزائر العاصمة', stars: 5, rooms: [{ name: 'غرفة سوبرير', price: 140 }, { name: 'جناح', price: 250 }] },
+      { id: 19, name: 'فندق الهيلتون', country: 'الجزائر', city: 'قسنطينة', stars: 4, rooms: [{ name: 'غرفة مفردة', price: 80 }, { name: 'غرفة مزدوجة', price: 120 }] },
+      // تونس
+      { id: 20, name: 'فندق قرطاج', country: 'تونس', city: 'تونس', stars: 5, rooms: [{ name: 'غرفة مطلة', price: 150 }, { name: 'جناح', price: 270 }] },
+      { id: 21, name: 'فندق المرسى', country: 'تونس', city: 'الحمامات', stars: 4, rooms: [{ name: 'غرفة قياسية', price: 90 }, { name: 'غرفة عائلية', price: 160 }] },
+      // عُمان
+      { id: 22, name: 'فندق الفخامة', country: 'عُمان', city: 'مسقط', stars: 5, rooms: [{ name: 'غرفة سوبرير', price: 170 }, { name: 'جناح رئاسي', price: 310 }] },
+      { id: 23, name: 'فندق البستان', country: 'عُمان', city: 'صلالة', stars: 4, rooms: [{ name: 'غرفة مفردة', price: 95 }, { name: 'غرفة مزدوجة', price: 145 }] },
+      // البحرين
+      { id: 24, name: 'فندق الرفاع', country: 'البحرين', city: 'المنامة', stars: 5, rooms: [{ name: 'غرفة كلاسيك', price: 160 }, { name: 'جناح', price: 300 }] },
+      { id: 25, name: 'فندق السفير', country: 'البحرين', city: 'المحرق', stars: 4, rooms: [{ name: 'غرفة عادية', price: 80 }, { name: 'غرفة مطلة', price: 130 }] },
+      // لبنان
+      { id: 26, name: 'فندق الفينيسيا', country: 'لبنان', city: 'بيروت', stars: 5, rooms: [{ name: 'غرفة سوبرير', price: 200 }, { name: 'جناح رئاسي', price: 380 }] },
+      { id: 27, name: 'فندق الروشة', country: 'لبنان', city: 'بيروت', stars: 4, rooms: [{ name: 'غرفة مفردة', price: 110 }, { name: 'غرفة مزدوجة', price: 170 }] },
+      // العراق
+      { id: 28, name: 'فندق الرشيد', country: 'العراق', city: 'بغداد', stars: 4, rooms: [{ name: 'غرفة قياسية', price: 85 }, { name: 'جناح', price: 150 }] },
+      { id: 29, name: 'فندق الباب', country: 'العراق', city: 'أربيل', stars: 3, rooms: [{ name: 'غرفة اقتصادية', price: 50 }, { name: 'غرفة عادية', price: 75 }] },
+      // اليمن
+      { id: 30, name: 'فندق سبأ', country: 'اليمن', city: 'صنعاء', stars: 4, rooms: [{ name: 'غرفة مفردة', price: 70 }, { name: 'جناح', price: 120 }] },
+      { id: 31, name: 'فندق عدن', country: 'اليمن', city: 'عدن', stars: 3, rooms: [{ name: 'غرفة عادية', price: 45 }, { name: 'غرفة مطلة', price: 65 }] },
+    ],
+
+    // ===== أنواع التذاكر =====
+    ticketTypes: [
+      { id: 't1', name: '🥇 الدرجة الأولى', multiplier: 2.5 },
+      { id: 't2', name: '💼 رجال الأعمال', multiplier: 1.8 },
+      { id: 't3', name: '🥈 الدرجة الثانية', multiplier: 1.2 },
+      { id: 't4', name: '🟢 الدرجة العادية', multiplier: 1.0 },
+    ],
+
+    currentUser: null,
+    selectedAirlineId: null,
+    selectedFlightId: null,
+    selectedTicketId: null,
+    selectedHotelId: null,
+    selectedRoomName: null,
+    checkInDate: '',
+    checkOutDate: '',
+    bookingRef: null
+  };
+
+  // ================================================================
+  // 2. دوال التنقل
+  // ================================================================
+  function showPage(pageName) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.getElementById(`page-${pageName}`).classList.add('active');
+    if (pageName === 'home') { renderAirlines(); document.getElementById('welcomeMsg').innerText = `مرحباً ${DB.currentUser?.username || ''} - شركات الطيران في ${DB.currentUser?.country || ''}`; }
+    if (pageName === 'login') { document.getElementById('loginError').innerText = ''; document.getElementById('loginForm').reset(); }
+    if (pageName === 'register') { document.getElementById('registerError').innerText = ''; document.getElementById('registerForm').reset(); document.getElementById('passportFileName').innerText = ' (لم يتم)'; }
+  }
+
+  // ================================================================
+  // 3. التسجيل
+  // ================================================================
+  document.getElementById('registerForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const err = document.getElementById('registerError');
+    const p1 = document.getElementById('regPassword').value, p2 = document.getElementById('regPassword2').value;
+    if (p1 !== p2) { err.innerText = '❌ كلمة المرور غير متطابقة!'; err.style.display = 'block'; return; }
+    if (p1.length < 3) { err.innerText = '❌ أقل من 3 أحرف'; err.style.display = 'block'; return; }
+    const newUser = {
+      id: DB.users.length + 1,
+      username: document.getElementById('regUsername').value,
+      email: document.getElementById('regEmail').value,
+      password: p1,
+      phone: document.getElementById('regPhone').value,
+      country: document.getElementById('regCountry').value,
+      passport: document.getElementById('passportInput').files[0]?.name || 'default.jpg',
+      code: document.getElementById('regCode').value || 'N/A'
+    };
+    DB.users.push(newUser);
+    err.style.color = '#28a745'; err.innerText = '✅ تم إنشاء الحساب!'; err.style.display = 'block';
+    setTimeout(() => { document.getElementById('registerForm').reset(); document.getElementById('passportFileName').innerText = ' (لم يتم)'; showPage('login'); err.style.display = 'none'; err.style.color = '#dc3545'; }, 1500);
+  });
+  document.getElementById('passportInput').addEventListener('change', function() {
+    document.getElementById('passportFileName').innerText = ` (${this.files[0]?.name || 'لم يتم'})`;
+  });
+
+  // ================================================================
+  // 4. تسجيل الدخول
+  // ================================================================
+  document.getElementById('loginForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const email = document.getElementById('loginEmail').value, pass = document.getElementById('loginPassword').value;
+    const user = DB.users.find(u => u.email === email && u.password === pass);
+    if (user) { DB.currentUser = user; document.getElementById('loginError').style.display = 'none'; showPage('home'); }
+    else { document.getElementById('loginError').innerText = '❌ بيانات غير صحيحة'; document.getElementById('loginError').style.display = 'block'; }
+  });
+
+  function logout() { DB.currentUser = null; DB.selectedFlightId = null; DB.selectedTicketId = null; DB.selectedHotelId = null; document.getElementById('finalBookBtn').style.display = 'none'; showPage('login'); }
+
+  // ================================================================
+  // 5. عرض شركات الطيران (حسب الدولة)
+  // ================================================================
+  function renderAirlines() {
+    const grid = document.getElementById('airlineGrid');
+    grid.innerHTML = '';
+    if (!DB.currentUser) return;
+    const filtered = DB.airlines.filter(a => a.country === DB.currentUser.country);
+    if (filtered.length === 0) { grid.innerHTML = '<p>⚠️ لا توجد شركات طيران في دولتك حالياً.</p>'; return; }
+    filtered.forEach(airline => {
+      const div = document.createElement('div'); div.className = 'card';
+      div.innerHTML = `<img src="${airline.logo}" alt="${airline.name}"><h4>${airline.name}</h4>`;
+      div.onclick = () => openAirline(airline.id);
+      grid.appendChild(div);
+    });
+  }
+
+  // ================================================================
+  // 6. فتح صفحة الشركة
+  // ================================================================
+  function openAirline(id) {
+    DB.selectedAirlineId = id;
+    DB.selectedFlightId = null; DB.selectedTicketId = null; DB.selectedHotelId = null; DB.selectedRoomName = null;
+    document.getElementById('finalBookBtn').style.display = 'none';
+    const airline = DB.airlines.find(a => a.id === id);
+    document.getElementById('airlineTitle').innerHTML = `🛫 ${airline.name}`;
+    showPage('airline');
+    switchTab('flights');
+  }
+
+  // ================================================================
+  // 7. التبويبات
+  // ================================================================
+  function switchTab(tab) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active-tab'));
+    document.querySelector(`.tab-btn[onclick*="${tab}"]`)?.classList.add('active-tab');
+    const container = document.getElementById('tabContent');
+    if (tab === 'flights') renderFlights(container);
+    else if (tab === 'tickets') renderTickets(container);
+    else if (tab === 'hotels') renderHotels(container);
+    checkFinalButton();
+  }
+
+  // ---- 7.1 الرحلات ----
+  function renderFlights(container) {
+    const airlineId = DB.selectedAirlineId;
+    const list = DB.flights.filter(f => f.airlineId === airlineId);
+    let html = `<div class="flex-between"><input type="text" id="flightSearch" class="search-input" placeholder="🔍 بحث (من/إلى)" onkeyup="filterFlights()"></div><div id="flightList">`;
+    if (list.length === 0) html += `<p>⚠️ لا توجد رحلات.</p>`;
+    else list.forEach(f => {
+      const sel = (DB.selectedFlightId === f.id) ? 'selected' : '';
+      html += `<div class="list-item ${sel}" onclick="selectFlight(${f.id})" id="flight-${f.id}">
+        <span><strong>${f.from}</strong> ➜ <strong>${f.to}</strong> (${f.fromCountry} → ${f.toCountry})</span>
+        <span>🕐 ${f.time} | 💰 ${f.price} $</span>
+      </div>`;
+    });
+    html += `</div>`;
+    container.innerHTML = html;
+  }
+  function filterFlights() {
+    const q = document.getElementById('flightSearch')?.value?.toLowerCase() || '';
+    document.querySelectorAll('#flightList .list-item').forEach(el => {
+      const txt = el.innerText.toLowerCase();
+      el.style.display = txt.includes(q) ? 'flex' : 'none';
+    });
+  }
+  function selectFlight(id) {
+    DB.selectedFlightId = id;
+    DB.selectedHotelId = null; DB.selectedRoomName = null;
+    document.querySelectorAll('#flightList .list-item').forEach(el => el.classList.remove('selected'));
+    const el = document.getElementById(`flight-${id}`);
+    if (el) el.classList.add('selected');
+    checkFinalButton();
+    // تحديث الفنادق بناءً على الوجهة
+    const flight = DB.flights.find(f => f.id === id);
+    if (flight) { switchTab('hotels'); }
+  }
+
+  // ---- 7.2 التذاكر ----
+  function renderTickets(container) {
+    let html = `<h4>🎫 اختر نوع التذكرة:</h4><div class="radio-group">`;
+    DB.ticketTypes.forEach(t => {
+      const checked = (DB.selectedTicketId === t.id) ? 'checked' : '';
+      html += `<label><input type="radio" name="ticketType" value="${t.id}" ${checked} onchange="selectTicket('${t.id}')"> ${t.name}</label>`;
+    });
+    html += `</div>`;
+    container.innerHTML = html;
+  }
+  function selectTicket(id) {
+    DB.selectedTicketId = id;
+    checkFinalButton();
+  }
+
+  // ---- 7.3 الفنادق (حسب الدولة الوجهة) ----
+  function renderHotels(container) {
+    const flight = DB.flights.find(f => f.id === DB.selectedFlightId);
+    if (!flight) {
+      container.innerHTML = `<p>⚠️ الرجاء اختيار رحلة أولاً من تبويب الرحلات.</p>`;
+      return;
+    }
+    const destCountry = flight.toCountry;
+    const available = DB.hotels.filter(h => h.country === destCountry);
+    let html = `<h4>🏨 فنادق في <strong>${destCountry}</strong> (وجهة الرحلة)</h4>`;
+    if (available.length === 0) { html += `<p>⚠️ لا توجد فنادق في هذه الوجهة.</p>`; container.innerHTML = html; return; }
+    
+    available.forEach(h => {
+      const isSelected = (DB.selectedHotelId === h.id);
+      html += `<div class="hotel-card" style="border-color:${isSelected ? '#28a745' : '#e9ecef'}">
+        <div class="flex-between"><span><strong>🏨 ${h.name}</strong> (${h.city}) ⭐ ${h.stars}</span></div>
+        <div class="room-options">`;
+      h.rooms.forEach(r => {
+        const active = (DB.selectedHotelId === h.id && DB.selectedRoomName === r.name) ? 'active-room' : '';
+        html += `<button class="room-btn ${active}" onclick="selectRoom(${h.id}, '${r.name}', ${r.price})">${r.name} - ${r.price} $ / ليلة</button>`;
+      });
+      html += `</div>`;
+      if (isSelected) {
+        html += `<div class="date-group">
+          <input type="date" id="checkIn" value="${DB.checkInDate}" onchange="DB.checkInDate=this.value; checkFinalButton();">
+          <input type="date" id="checkOut" value="${DB.checkOutDate}" onchange="DB.checkOutDate=this.value; checkFinalButton();">
+        </div>`;
+      }
+      html += `</div>`;
+    });
+    container.innerHTML = html;
+    if (DB.selectedHotelId) {
+      const checkInEl = document.getElementById('checkIn');
+      const checkOutEl = document.getElementById('checkOut');
+      if (checkInEl) checkInEl.value = DB.checkInDate;
+      if (checkOutEl) checkOutEl.value = DB.checkOutDate;
+    }
+  }
+  function selectRoom(hotelId, roomName, price) {
+    DB.selectedHotelId = hotelId;
+    DB.selectedRoomName = roomName;
+    renderHotels(document.getElementById('tabContent'));
+    checkFinalButton();
+  }
+
+  // ================================================================
+  // 8. التحقق من إظهار زر الحجز
+  // ================================================================
+  function checkFinalButton() {
+    const btn = document.getElementById('finalBookBtn');
+    const flight = DB.flights.find(f => f.id === DB.selectedFlightId);
+    if (flight && DB.selectedTicketId && DB.selectedHotelId && DB.selectedRoomName && DB.checkInDate && DB.checkOutDate) {
+      btn.style.display = 'block';
+    } else {
+      btn.style.display = 'none';
+    }
+  }
+
+  // ================================================================
+  // 9. تأكيد الحجز وإنشاء PDF مع الباركود
+  // ================================================================
+  function confirmBooking() {
+    const flight = DB.flights.find(f => f.id === DB.selectedFlightId);
+    const ticket = DB.ticketTypes.find(t => t.id === DB.selectedTicketId);
+    const hotel = DB.hotels.find(h => h.id === DB.selectedHotelId);
+    const room = hotel?.rooms.find(r => r.name === DB.selectedRoomName);
+    const user = DB.currentUser;
+    if (!flight || !ticket || !hotel || !room) { alert('يرجى إكمال جميع الاختيارات.'); return; }
+
+    const totalFlight = flight.price * ticket.multiplier;
+    const totalHotel = room.price; // ليلة واحدة
+    const grandTotal = totalFlight + totalHotel;
+    const ref = 'DH-' + Date.now().toString(36).toUpperCase();
+    DB.bookingRef = ref;
+
+    const modal = document.getElementById('receiptModal');
+    modal.classList.add('show');
+    const content = document.getElementById('receiptContent');
+    content.innerHTML = `
+      <div class="receipt-item"><span>مرجع الحجز</span><span><strong>${ref}</strong></span></div>
+      <div class="receipt-item"><span>المسافر</span><span>${user.username} (${user.email})</span></div>
+      <div class="receipt-item"><span>الرحلة</span><span>${flight.from} ➜ ${flight.to} (${flight.time})</span></div>
+      <div class="receipt-item"><span>نوع التذكرة</span><span>${ticket.name}</span></div>
+      <div class="receipt-item"><span>الفندق</span><span>${hotel.name} - ${room.name}</span></div>
+      <div class="receipt-item"><span>الوصول / المغادرة</span><span>${DB.checkInDate} → ${DB.checkOutDate}</span></div>
+      <div class="receipt-item"><span>الإجمالي</span><span><strong>${grandTotal} $</strong></span></div>
+    `;
+
+    document.getElementById('qrcodeContainer').innerHTML = '';
+    new QRCode(document.getElementById('qrcodeContainer'), {
+      text: JSON.stringify({ ref, user: user.email, flight: flight.id, hotel: hotel.id }),
+      width: 160, height: 160,
+      colorDark: "#000000", colorLight: "#ffffff",
+      correctLevel: QRCode.CorrectLevel.H
+    });
+  }
+
+  // ================================================================
+  // 10. تحميل PDF مع الباركود
+  // ================================================================
+  function downloadPDF() {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF('p', 'mm', 'a4');
+    const pageWidth = 210;
+    let y = 20;
+
+    const flight = DB.flights.find(f => f.id === DB.selectedFlightId);
+    const ticket = DB.ticketTypes.find(t => t.id === DB.selectedTicketId);
+    const hotel = DB.hotels.find(h => h.id === DB.selectedHotelId);
+    const room = hotel?.rooms.find(r => r.name === DB.selectedRoomName);
+    const user = DB.currentUser;
+    const total = (flight.price * ticket.multiplier) + room.price;
+
+    doc.setFontSize(22); doc.setTextColor(0, 51, 102);
+    doc.text('وكالة الدواحي للسفر', pageWidth / 2, y, { align: 'center' });
+    y += 12;
+    doc.setFontSize(14); doc.setTextColor(80);
+    doc.text('تأكيد الحجز', pageWidth / 2, y, { align: 'center' });
+    y += 12;
+
+    const rows = [
+      ['مرجع الحجز', DB.bookingRef],
+      ['المسافر', `${user.username} (${user.email})`],
+      ['الرحلة', `${flight.from} ➜ ${flight.to} (${flight.time})`],
+      ['نوع التذكرة', ticket.name],
+      ['الفندق', `${hotel.name} - ${room.name}`],
+      ['تاريخ الوصول', DB.checkInDate],
+      ['تاريخ المغادرة', DB.checkOutDate],
+      ['الإجمالي', `${total} $`],
+    ];
+    doc.autoTable({
+      startY: y,
+      head: [['البند', 'التفاصيل']],
+      body: rows,
+      theme: 'striped',
+      styles: { halign: 'right', font: 'helvetica' },
+      headStyles: { fillColor: [0, 123, 255] },
+      columnStyles: { 0: { cellWidth: 60 }, 1: { cellWidth: 120 } },
+      margin: { right: 20, left: 20 }
+    });
+
+    let finalY = doc.lastAutoTable.finalY + 15;
+    const qrCanvas = document.querySelector('#qrcodeContainer canvas');
+    if (qrCanvas) {
+      const imgData = qrCanvas.toDataURL('image/png');
+      doc.addImage(imgData, 'PNG', pageWidth / 2 - 30, finalY, 60, 60);
+      finalY += 70;
+    }
+
+    doc.setFontSize(10); doc.setTextColor(150);
+    doc.text('شكراً لاختياركم وكالة الدواحي', pageWidth / 2, finalY + 10, { align: 'center' });
+    doc.save(`حجز_${DB.bookingRef}.pdf`);
+  }
+
+  // ================================================================
+  // 11. إغلاق النافذة
+  // ================================================================
+  function closeReceipt() {
+    document.getElementById('receiptModal').classList.remove('show');
+    DB.selectedFlightId = null; DB.selectedTicketId = null; DB.selectedHotelId = null; DB.selectedRoomName = null; DB.checkInDate = ''; DB.checkOutDate = '';
+    document.getElementById('finalBookBtn').style.display = 'none';
+    showPage('home');
+  }
+
+  // ================================================================
+  // 12. تهيئة
+  // ================================================================
+  document.addEventListener('DOMContentLoaded', function() {
+    showPage('login');
+    window.selectFlight = selectFlight;
+    window.selectTicket = selectTicket;
+    window.selectRoom = selectRoom;
+    window.filterFlights = filterFlights;
+    window.switchTab = switchTab;
+    window.confirmBooking = confirmBooking;
+    window.downloadPDF = downloadPDF;
+    window.closeReceipt = closeReceipt;
+    window.showPage = showPage;
+    window.logout = logout;
+    window.openAirline = openAirline;
+    document.addEventListener('change', function(e) {
+      if (e.target.id === 'checkIn') DB.checkInDate = e.target.value;
+      if (e.target.id === 'checkOut') DB.checkOutDate = e.target.value;
+      checkFinalButton();
+    });
+  });
+</script>
+</body>
+</html>
