@@ -16,7 +16,7 @@ from functools import wraps
 
 from flask import (
     Flask, request, session, redirect, url_for, render_template_string,
-    send_from_directory, flash, g, abort
+    send_from_directory, flash, g, abort, get_flashed_messages
 )
 from werkzeug.utils import secure_filename
 
@@ -160,7 +160,7 @@ COUNTRY_DATA = {
     "الأردن":      {"city": "عمّان",     "airlines": ["الملكية الأردنية", "العربية للطيران - الأردن"]},
     "فلسطين":      {"city": "القدس",     "airlines": ["الخطوط الجوية الفلسطينية"]},
     "لبنان":       {"city": "بيروت",     "airlines": ["طيران الشرق الأوسط"]},
-    "سوريا":       {"city": "دمشق",      "airlines": ["الخطوط الجوية السورية", "شام ويงز"]},
+    "سوريا":       {"city": "دمشق",      "airlines": ["الخطوط الجوية السورية", "شام ويngz"]},
     "العراق":      {"city": "بغداد",     "airlines": ["الخطوط الجوية العراقية", "طيران أور"]},
     "اليمن":       {"city": "صنعاء",     "airlines": ["الخطوط الجوية اليمنية", "يمنية فيلكس"]},
     "ليبيا":       {"city": "طرابلس",    "airlines": ["الخطوط الجوية الليبية", "أفريقيا للطيران"]},
@@ -458,19 +458,13 @@ def layout(title, body, user=None):
 
 
 def flashes_html():
+    """عرض رسائل الفلاش (الأخطاء والنجاح) بشكل صحيح"""
     out = ""
-    for cat, msg in session.pop("_flashes", []) if False else []:
-        pass
-    msgs = get_flashed()
+    msgs = get_flashed_messages(with_categories=True)
     for cat, msg in msgs:
         cls = "error" if cat == "error" else "ok"
         out += f'<div class="flash {cls}">{msg}</div>'
     return out
-
-
-def get_flashed():
-    from flask import get_flashed_messages
-    return get_flashed_messages(with_categories=True)
 
 
 # ------------------------------------------------------------------
@@ -678,7 +672,7 @@ def airline_page(airline_id):
             <tr><td>الدرجة الثانية</td><td>25 كجم</td><td>قطعة واحدة</td></tr>
             <tr><td>الدرجة العادية</td><td>20 كجم</td><td>قطعة واحدة</td></tr>
           </table>
-          <p class="subtitle" style="margin-top:10px">يلتزم المسافر بأنظمة الأمتعة الخاصة بالشركة، وأي وزن زائد يُحتسب برسوم إضافية عند تسجيل الوصول.</p>
+          <p class="subtitle" style="margin-top:10px">يلتزم المسافر بأنظمة الأمتعة الخاصة بالشركة، وأي وزن زائد يُحتسب برسوم إضافي</p>
         </div>
         """
     elif tab == "hotels":
