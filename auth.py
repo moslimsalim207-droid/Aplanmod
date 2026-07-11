@@ -5,15 +5,33 @@ from datetime import datetime, date
 from flask import session, redirect, url_for, flash
 from functools import wraps
 from database import get_db
+from werkzeug.security import generate_password_hash, check_password_hash
 
 def hash_password(password: str) -> str:
-    """Hash password with salt"""
-    salt = 'dawahi_fixed_salt_v1'
-    return hashlib.sha256((salt + password).encode('utf-8')).hexdigest()
+    """Hash password using Werkzeug's secure hasher."""
+    return generate_password_hash(password)
 
 def verify_password(stored_hash: str, password: str) -> bool:
-    """Verify password against stored hash"""
-    return stored_hash == hash_password(password)
+    """Verify password against stored hash.
+
+    This supports legacy SHA256 salted hashes (fixed salt) and modern
+    werkzeug generate_password_hash outputs. If the stored hash looks
+    like a werkzeug hash (starts with 'pbkdf2:'), use check_password_hash.
+    Otherwise fall back to legacy verification for compatibility.
+    """
+    if not stored_hash:
+        return False
+
+    # Werkzueg hashed passwords start with a method like 'pbkdf2:sha256:'
+    if stored_hash.startswith('pbkdf2:') or ':' in stored_hash:
+        try:
+            return check_password_hash(stored_hash, password)
+        except Exception:
+            return False
+
+    # Legacy fallback: SHA256 with fixed salt (kept for backward compatibility)
+    salt = 'dawahi_fixed_salt_v1'
+    return stored_hash == hashlib.sha256((salt + password).encode('utf-8')).hexdigest()
 
 def gen_ref_code() -> str:
     """Generate unique reference code"""
