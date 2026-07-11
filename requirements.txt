@@ -1,0 +1,5 @@
+Flask==2.3.3
+Werkzeug==2.3.7
+ReportLab==4.0.4
+python-dotenv==1.0.0
+gunicorn==21.2.0
