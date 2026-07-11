@@ -30,9 +30,15 @@ class DevelopmentConfig(Config):
 class ProductionConfig(Config):
     """Production configuration"""
     DEBUG = False
-    SECRET_KEY = os.environ.get('SECRET_KEY')
-    if not SECRET_KEY:
-        raise ValueError('SECRET_KEY environment variable must be set in production')
+    # Read SECRET_KEY from environment. Keep empty string if not set to avoid
+    # raising exceptions at import time. Validate explicitly at runtime.
+    SECRET_KEY = os.environ.get('SECRET_KEY', '')
+
+    @classmethod
+    def validate(cls):
+        """Validate required production settings at startup (call only if using production)."""
+        if not cls.SECRET_KEY:
+            raise ValueError('SECRET_KEY environment variable must be set in production')
 
 config = {
     'development': DevelopmentConfig,
