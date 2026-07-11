@@ -279,186 +279,170 @@ def airline_page(airline_id):
     content = ''
     
     if tab == 'baggage':
-        content = _render_baggage_tab(airline, lang)
-    elif tab == 'hotels':
-        content = _render_hotels_tab(airline, airline_id, db, lang)
-    else:
-        content = _render_flights_tab(airline, airline_id, db, lang)
-    
-    body = f"""
-    <h1>{airline['name']}</h1>
-    {flashes_html()}
-    {_render_airline_tabs(airline_id, tab, lang)}
-    {content}
-    """
-    
-    return render_template_string(layout('page_airline', body, user))
-
-def _render_baggage_tab(airline, lang):
-    """Render baggage information tab"""
-    return f"""
-    <div class="card">
-      <h3>{t('baggage', lang)} - {airline['name']}</h3>
-      <table>
-        <tr><th>{t('class', lang)}</th><th>{t('baggage', lang)} (kg)</th><th>Hand carry</th></tr>
-        <tr><td>{t('first', lang)}</td><td>40</td><td>2 pcs</td></tr>
-        <tr><td>{t('business', lang)}</td><td>30</td><td>2 pcs</td></tr>
-        <tr><td>{t('second', lang)}</td><td>25</td><td>1 pc</td></tr>
-        <tr><td>{t('economy', lang)}</td><td>20</td><td>1 pc</td></tr>
-      </table>
-    </div>
-    """
-
-def _render_hotels_tab(airline, airline_id, db, lang):
-    """Render hotels tab"""
-    q_stars = request.args.get('stars', '')
-    
-    dest_cities = [
-        r['to_city'] for r in db.execute(
-            'SELECT DISTINCT to_city FROM flights WHERE airline_id=?',
-            (airline_id,)
-        ).fetchall()
-    ]
-    
-    if not dest_cities:
-        return f'<div class="card"><p class="subtitle">{t("no_bookings", lang)}</p></div>'
-    
-    placeholders = ','.join('?' * len(dest_cities))
-    sql = f"SELECT * FROM hotels WHERE city IN ({placeholders})"
-    params = list(dest_cities)
-    
-    if q_stars and q_stars.isdigit():
-        sql += ' AND stars=?'
-        params.append(int(q_stars))
-    
-    sql += ' ORDER BY stars DESC, city'
-    hotels = db.execute(sql, params).fetchall()
-    
-    star_filters = ''.join(
-        f'<a class="tab {"active" if q_stars==str(s) else ""}" '
-        f'href="{url_for("airline_page", airline_id=airline_id, tab="hotels", stars=s)}">{s} ★</a>'
-        for s in (5, 4, 3)
-    )
-    star_filters += f'<a class="tab {"active" if not q_stars else ""}" href="{url_for("airline_page", airline_id=airline_id, tab="hotels")}">{t("back", lang)}</a>'
-    
-    cards = ''.join(
-        f"""<a class="hotel-card" href="{url_for('hotel_rooms', hotel_id=h['id'], airline_id=airline_id)}">
-              <div class="emoji-big">🏨</div>
-              <h3>{h['name']}</h3>
-              <div class="stars">{'★'*h['stars']}{'☆'*(5-h['stars'])}</div>
-              <div class="badge">{h['city']} - {h['country']}</div>
-            </a>"""
-        for h in hotels
-    )
-    
-    return f"""
-    <div class="card">
-      <h3>{t('hotels', lang)}</h3>
-      <div class="tabs">{star_filters}</div>
-      <div class="grid">{cards or f'<p class="subtitle">{t("no_bookings", lang)}</p>'}</div>
-    </div>
-    """
-
-def _render_flights_tab(airline, airline_id, db, lang):
-    """Render flights tab"""
-    scope = request.args.get('scope', '')
-    
-    if scope not in ('local', 'intl'):
-        return f"""
-        <div class="card center">
-          <h3>{t('flights', lang)}</h3>
-          <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr))">
-            <a class="airline-card" href="{url_for('airline_page', airline_id=airline_id, tab='flights', scope='local')}">
-              <div class="emoji-big">🚏</div>
-              <h3>{t('local', lang)}</h3>
-            </a>
-            <a class="airline-card" href="{url_for('airline_page', airline_id=airline_id, tab='flights', scope='intl')}">
-              <div class="emoji-big">🌍</div>
-              <h3>{t('international', lang)}</h3>
-            </a>
-          </div>
+        content = f"""
+        <div class="card">
+          <h3>{t('baggage', lang)} - {airline['name']}</h3>
+          <table>
+            <tr><th>{t('class', lang)}</th><th>{t('baggage', lang)} (kg)</th><th>Hand carry</th></tr>
+            <tr><td>{t('first', lang)}</td><td>40</td><td>2 pcs</td></tr>
+            <tr><td>{t('business', lang)}</td><td>30</td><td>2 pcs</td></tr>
+            <tr><td>{t('second', lang)}</td><td>25</td><td>1 pc</td></tr>
+            <tr><td>{t('economy', lang)}</td><td>20</td><td>1 pc</td></tr>
+          </table>
         </div>
         """
-    
-    home_country = airline['country']
-    from_q = request.args.get('from', '')
-    to_q = request.args.get('to', '')
-    
-    if scope == 'local':
-        sql = 'SELECT * FROM flights WHERE airline_id=? AND to_country=?'
-        params = [airline_id, home_country]
-        scope_label = t('local', lang)
-        city_choices = LOCAL_CITIES.get(home_country, [])
+    elif tab == 'hotels':
+        q_stars = request.args.get('stars', '')
+        dest_cities = [
+            r['to_city'] for r in db.execute(
+                'SELECT DISTINCT to_city FROM flights WHERE airline_id=?',
+                (airline_id,)
+            ).fetchall()
+        ]
+        
+        if not dest_cities:
+            content = f'<div class="card"><p class="subtitle">{t("no_bookings", lang)}</p></div>'
+        else:
+            placeholders = ','.join('?' * len(dest_cities))
+            sql = f"SELECT * FROM hotels WHERE city IN ({placeholders})"
+            params = list(dest_cities)
+            
+            if q_stars and q_stars.isdigit():
+                sql += ' AND stars=?'
+                params.append(int(q_stars))
+            
+            sql += ' ORDER BY stars DESC, city'
+            hotels = db.execute(sql, params).fetchall()
+            
+            star_filters = ''.join(
+                f'<a class="tab {"active" if q_stars==str(s) else ""}" '
+                f'href="{url_for("airline_page", airline_id=airline_id, tab="hotels", stars=s)}">{s} ★</a>'
+                for s in (5, 4, 3)
+            )
+            star_filters += f'<a class="tab {"active" if not q_stars else ""}" href="{url_for("airline_page", airline_id=airline_id, tab="hotels")}">{t("back", lang)}</a>'
+            
+            cards = ''.join(
+                f"""<a class="hotel-card" href="{url_for('hotel_rooms', hotel_id=h['id'], airline_id=airline_id)}">
+                      <div class="emoji-big">🏨</div>
+                      <h3>{h['name']}</h3>
+                      <div class="stars">{'★'*h['stars']}{'☆'*(5-h['stars'])}</div>
+                      <div class="badge">{h['city']} - {h['country']}</div>
+                    </a>"""
+                for h in hotels
+            )
+            
+            content = f"""
+            <div class="card">
+              <h3>{t('hotels', lang)}</h3>
+              <div class="tabs">{star_filters}</div>
+              <div class="grid">{cards or f'<p class="subtitle">{t("no_bookings", lang)}</p>'}</div>
+            </div>
+            """
     else:
-        sql = 'SELECT * FROM flights WHERE airline_id=? AND to_country!=?'
-        params = [airline_id, home_country]
-        scope_label = t('international', lang)
-        city_choices = []
-    
-    if from_q:
-        sql += ' AND from_city LIKE ?'
-        params.append(f'%{from_q}%')
-    if to_q:
-        sql += ' AND to_city LIKE ?'
-        params.append(f'%{to_q}%')
-    
-    sql += ' ORDER BY to_city'
-    flights = db.execute(sql, params).fetchall()
-    
-    city_chips = ''
-    if city_choices:
-        chips = ''.join(
-            f'<a class="tab {"active" if to_q==c else ""}" '
-            f'href="{url_for("airline_page", airline_id=airline_id, tab="flights", scope="local", to=c)}">{c}</a>'
-            for c in city_choices
-        )
-        chips += f'<a class="tab {"active" if not to_q else ""}" href="{url_for("airline_page", airline_id=airline_id, tab="flights", scope="local")}">{t("back", lang)}</a>'
-        city_chips = f'<p class="subtitle">{t("to_city", lang)}:</p><div class="tabs">{chips}</div>'
-    
-    rows = ''.join(
-        f"""<div class="flight-row">
-              <div>
-                <div class="route">{f['from_city']} ✈ {f['to_city']}</div>
-                <div class="subtitle">{t('departure', lang)} {f['dep_time']} - {t('arrival', lang)} {f['arr_time']} ({f['duration']})</div>
+        scope = request.args.get('scope', '')
+        
+        if scope not in ('local', 'intl'):
+            content = f"""
+            <div class="card center">
+              <h3>{t('flights', lang)}</h3>
+              <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr))">
+                <a class="airline-card" href="{url_for('airline_page', airline_id=airline_id, tab='flights', scope='local')}">
+                  <div class="emoji-big">🚏</div>
+                  <h3>{t('local', lang)}</h3>
+                </a>
+                <a class="airline-card" href="{url_for('airline_page', airline_id=airline_id, tab='flights', scope='intl')}">
+                  <div class="emoji-big">🌍</div>
+                  <h3>{t('international', lang)}</h3>
+                </a>
               </div>
-              <div class="price">{f['price_economy']} ج.س</div>
-              <a class="btn small" href="{url_for('select_class', flight_id=f['id'])}">{t('select_class', lang)}</a>
-            </div>"""
-        for f in flights
-    )
+            </div>
+            """
+        else:
+            home_country = airline['country']
+            from_q = request.args.get('from', '')
+            to_q = request.args.get('to', '')
+            
+            if scope == 'local':
+                sql = 'SELECT * FROM flights WHERE airline_id=? AND to_country=?'
+                params = [airline_id, home_country]
+                scope_label = t('local', lang)
+                city_choices = LOCAL_CITIES.get(home_country, [])
+            else:
+                sql = 'SELECT * FROM flights WHERE airline_id=? AND to_country!=?'
+                params = [airline_id, home_country]
+                scope_label = t('international', lang)
+                city_choices = []
+            
+            if from_q:
+                sql += ' AND from_city LIKE ?'
+                params.append(f'%{from_q}%')
+            if to_q:
+                sql += ' AND to_city LIKE ?'
+                params.append(f'%{to_q}%')
+            
+            sql += ' ORDER BY to_city'
+            flights = db.execute(sql, params).fetchall()
+            
+            city_chips = ''
+            if city_choices:
+                chips = ''.join(
+                    f'<a class="tab {"active" if to_q==c else ""}" '
+                    f'href="{url_for("airline_page", airline_id=airline_id, tab="flights", scope="local", to=c)}">{c}</a>'
+                    for c in city_choices
+                )
+                chips += f'<a class="tab {"active" if not to_q else ""}" href="{url_for("airline_page", airline_id=airline_id, tab="flights", scope="local")}">{t("back", lang)}</a>'
+                city_chips = f'<p class="subtitle">{t("to_city", lang)}:</p><div class="tabs">{chips}</div>'
+            
+            rows = ''.join(
+                f"""<div class="flight-row">
+                      <div>
+                        <div class="route">{f['from_city']} ✈ {f['to_city']}</div>
+                        <div class="subtitle">{t('departure', lang)} {f['dep_time']} - {t('arrival', lang)} {f['arr_time']} ({f['duration']})</div>
+                      </div>
+                      <div class="price">{f['price_economy']} ج.س</div>
+                      <a class="btn small" href="{url_for('select_class', flight_id=f['id'])}">{t('select_class', lang)}</a>
+                    </div>"""
+                for f in flights
+            )
+            
+            content = f"""
+            <div class="card">
+              <div class="tabs">
+                <a class="tab {'active' if scope=='local' else ''}" href="{url_for('airline_page', airline_id=airline_id, tab='flights', scope='local')}">{t('local', lang)}</a>
+                <a class="tab {'active' if scope=='intl' else ''}" href="{url_for('airline_page', airline_id=airline_id, tab='flights', scope='intl')}">{t('international', lang)}</a>
+              </div>
+              <h3>{scope_label}</h3>
+              {city_chips}
+              <form method="get" class="search-bar">
+                <input type="hidden" name="tab" value="flights">
+                <input type="hidden" name="scope" value="{scope}">
+                <input type="text" name="from" placeholder="{t('from_city', lang)}" value="{from_q}">
+                <input type="text" name="to" placeholder="{t('to_city', lang)}" value="{to_q}">
+                <button class="btn small" type="submit">{t('search_button', lang)}</button>
+              </form>
+              {rows or f'<p class="subtitle">{t("no_bookings", lang)}</p>'}
+            </div>
+            """
     
-    return f"""
-    <div class="card">
-      <div class="tabs">
-        <a class="tab {'active' if scope=='local' else ''}" href="{url_for('airline_page', airline_id=airline_id, tab='flights', scope='local')}">{t('local', lang)}</a>
-        <a class="tab {'active' if scope=='intl' else ''}" href="{url_for('airline_page', airline_id=airline_id, tab='flights', scope='intl')}">{t('international', lang)}</a>
-      </div>
-      <h3>{scope_label}</h3>
-      {city_chips}
-      <form method="get" class="search-bar">
-        <input type="hidden" name="tab" value="flights">
-        <input type="hidden" name="scope" value="{scope}">
-        <input type="text" name="from" placeholder="{t('from_city', lang)}" value="{from_q}">
-        <input type="text" name="to" placeholder="{t('to_city', lang)}" value="{to_q}">
-        <button class="btn small" type="submit">{t('search_button', lang)}</button>
-      </form>
-      {rows or f'<p class="subtitle">{t("no_bookings", lang)}</p>'}
-    </div>
-    """
-
-def _render_airline_tabs(airline_id, active, lang):
-    """Render airline navigation tabs"""
     tabs = [
         ('flights', t('flights', lang)),
         ('baggage', t('baggage', lang)),
         ('hotels', t('hotels', lang))
     ]
-    out = '<div class="tabs">'
+    tabs_html = '<div class="tabs">'
     for key, label in tabs:
-        cls = 'tab active' if key == active else 'tab'
-        out += f'<a class="{cls}" href="{url_for("airline_page", airline_id=airline_id, tab=key)}">{label}</a>'
-    out += '</div>'
-    return out
+        cls = 'tab active' if key == tab else 'tab'
+        tabs_html += f'<a class="{cls}" href="{url_for("airline_page", airline_id=airline_id, tab=key)}">{label}</a>'
+    tabs_html += '</div>'
+    
+    body = f"""
+    <h1>{airline['name']}</h1>
+    {flashes_html()}
+    {tabs_html}
+    {content}
+    """
+    
+    return render_template_string(layout('page_airline', body, user))
 
 # ===================================================================
 # Flight and Ticket Selection
